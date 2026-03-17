@@ -1,41 +1,36 @@
 package com.example.tasks.service;
 
 import com.example.tasks.model.Task;
+import com.example.tasks.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 @Service
 public class TaskService {
 
-    private final List<Task> tasks = new ArrayList<>();
+    private final TaskRepository repo;
 
-    public TaskService() {
-        tasks.add(new Task(1L, "Approve leave request", "pending", "high", "HR", false));
-        tasks.add(new Task(2L, "Review PR #142", "completed", "medium", "Engineering", true));
+    public TaskService(TaskRepository repo) {
+        this.repo = repo;
     }
 
     public List<Task> getAllTasks() {
-        return tasks;
+        return repo.findAll();
     }
 
     public Task addTask(Task task) {
-        task.setId((long) (tasks.size() + 1));
-        tasks.add(task);
-        return task;
+        return repo.save(task);
     }
 
-    public Task updateTask(Long id, Task updatedTask) {
-        for (Task t : tasks) {
-            if (t.getId().equals(id)) {
-                t.setTitle(updatedTask.getTitle());
-                t.setStatus(updatedTask.getStatus());
-                t.setPriority(updatedTask.getPriority());
-                t.setType(updatedTask.getType());
-                t.setPinned(updatedTask.isPinned());
-                return t;
-            }
-        }
-        return null;
+    public Task updateTask(String id, Task updatedTask) {
+        return repo.findById(id).map(task -> {
+            task.setTitle(updatedTask.getTitle());
+            task.setStatus(updatedTask.getStatus());
+            task.setPriority(updatedTask.getPriority());
+            task.setType(updatedTask.getType());
+            task.setPinned(updatedTask.isPinned());
+            return repo.save(task);
+        }).orElse(null);
     }
 }

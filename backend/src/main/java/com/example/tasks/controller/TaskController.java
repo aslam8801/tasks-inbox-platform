@@ -28,7 +28,7 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody Task task) {
+    public Task updateTask(@PathVariable String id, @RequestBody Task task) {
         return service.updateTask(id, task);
     }
 }

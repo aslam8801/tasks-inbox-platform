@@ -1,20 +1,23 @@
 package com.example.tasks.model;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "tasks")
 public class Task {
 
-    private Long id;
+    @Id
+    private String id;
+
     private String title;
     private String status;
     private String priority;
     private String type;
     private boolean pinned;
 
-    // ✅ Default constructor
     public Task() {}
 
-    // ✅ Parameterized constructor
-    public Task(Long id, String title, String status, String priority, String type, boolean pinned) {
-        this.id = id;
+    public Task(String title, String status, String priority, String type, boolean pinned) {
         this.title = title;
         this.status = status;
         this.priority = priority;
@@ -22,10 +25,9 @@ public class Task {
         this.pinned = pinned;
     }
 
-    // ✅ Getters & Setters
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // getters & setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
