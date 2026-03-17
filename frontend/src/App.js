@@ -12,7 +12,7 @@ function App() {
 
   // 🔥 FETCH FROM BACKEND
   useEffect(() => {
-    fetch("http://localhost:8080/tasks")
+    fetch("https://tasks-inbox-platform.onrender.com/tasks")
       .then(res => res.json())
       .then(data => setTasks(data))
       .catch(err => console.error("Error fetching tasks:", err));
