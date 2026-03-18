@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import TaskList from "./components/TaskList";
 import Filters from "./components/Filters";
 import SearchBar from "./components/SearchBar";
-import SavedViews from "./components/SavedViews";
 import { connectWebSocket } from "./websocket";
 
 const BASE_URL = "https://tasks-inbox-platform.onrender.com";
@@ -11,12 +10,13 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [savedViews, setSavedViews] = useState([]);
 
-  const token = localStorage.getItem("token"); // JWT
+  const token = localStorage.getItem("token");
 
-  // ✅ FETCH INITIAL DATA
+  // ✅ Fetch tasks from backend
   useEffect(() => {
+    if (!token) return;
+
     fetch(`${BASE_URL}/tasks`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -24,10 +24,10 @@ function App() {
     })
       .then(res => res.json())
       .then(data => setTasks(data))
-      .catch(err => console.error(err));
-  }, []);
+      .catch(err => console.error("Fetch error:", err));
+  }, [token]);
 
-  // ✅ WEBSOCKET
+  // ✅ WebSocket connection (real-time updates)
   useEffect(() => {
     connectWebSocket((updatedTask) => {
       setTasks(prev => {
@@ -44,8 +44,10 @@ function App() {
     });
   }, []);
 
+  // ✅ Update status
   const toggleStatus = (id) => {
     const task = tasks.find(t => t.id === id);
+    if (!task) return;
 
     fetch(`${BASE_URL}/tasks/${id}`, {
       method: "PUT",
@@ -60,8 +62,10 @@ function App() {
     });
   };
 
+  // ✅ Pin task
   const togglePin = (id) => {
     const task = tasks.find(t => t.id === id);
+    if (!task) return;
 
     fetch(`${BASE_URL}/tasks/${id}`, {
       method: "PUT",
@@ -76,8 +80,10 @@ function App() {
     });
   };
 
+  // ✅ Snooze task
   const snoozeTask = (id) => {
     const task = tasks.find(t => t.id === id);
+    if (!task) return;
 
     const future = new Date();
     future.setHours(future.getHours() + 2);
@@ -95,16 +101,15 @@ function App() {
     });
   };
 
-  const saveView = () => {
-    setSavedViews(prev => [...prev, { filter, search }]);
-  };
-
+  // ✅ Filtering + search
   const now = new Date();
 
   const processedTasks = tasks
     .filter(t => !t.snoozedUntil || new Date(t.snoozedUntil) < now)
     .filter(t => (filter === "all" ? true : t.status === filter))
-    .filter(t => t.title.toLowerCase().includes(search.toLowerCase()))
+    .filter(t =>
+      t.title.toLowerCase().includes(search.toLowerCase())
+    )
     .sort((a, b) => b.pinned - a.pinned);
 
   return (
@@ -115,13 +120,6 @@ function App() {
 
         <SearchBar search={search} setSearch={setSearch} />
         <Filters setFilter={setFilter} />
-
-        <button
-          onClick={saveView}
-          className="mb-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Save View
-        </button>
 
         <TaskList
           tasks={processedTasks}
