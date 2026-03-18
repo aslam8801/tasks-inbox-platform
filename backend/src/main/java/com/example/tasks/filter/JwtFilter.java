@@ -3,9 +3,12 @@ package com.example.tasks.filter;
 import com.example.tasks.service.JwtService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 @Component
 public class JwtFilter implements Filter {
@@ -27,8 +30,18 @@ public class JwtFilter implements Filter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            if (!jwtService.validateToken(token)) {
-                throw new RuntimeException("Invalid Token");
+            if (jwtService.validateToken(token)) {
+
+                String username = jwtService.extractUsername(token);
+
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                username,
+                                null,
+                                new ArrayList<>()
+                        );
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
