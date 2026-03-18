@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import TaskList from "./components/TaskList";
 import Filters from "./components/Filters";
@@ -9,6 +10,7 @@ const BASE_URL = "https://tasks-inbox-platform.onrender.com";
 
 function App() {
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [token, setToken] = useState("");
@@ -34,8 +36,14 @@ function App() {
         });
       })
       .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch((err) => console.error("Error:", err));
+      .then((data) => {
+        setTasks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error:", err);
+        setLoading(false);
+      });
   }, []);
 
   // 🔄 WEBSOCKET REAL-TIME
@@ -52,52 +60,48 @@ function App() {
     });
 
     stompClient.activate();
-
     return () => stompClient.deactivate();
   }, []);
 
   // ➕ ADD TASK
   const addTask = () => {
-  console.log("Clicked Add", newTask, token);
+    console.log("Clicked Add", newTask, token);
 
-  if (!newTask.trim()) {
-    alert("Empty task");
-    return;
-  }
+    if (!newTask.trim()) {
+      alert("Empty task");
+      return;
+    }
 
-  if (!token) {
-    alert("No token yet");
-    return;
-  }
+    if (!token) return;
 
-  fetch(`${BASE_URL}/tasks`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      title: newTask,
-      status: "pending",
-      priority: "medium",
-      type: "General",
-      pinned: false,
-    }),
-  })
-    .then((res) => {
-      console.log("Response:", res);
-      if (!res.ok) throw new Error("Failed request");
-      return res.json();
+    fetch(`${BASE_URL}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: newTask,
+        status: "pending",
+        priority: "medium",
+        type: "General",
+        pinned: false,
+      }),
     })
-    .then((data) => {
-      console.log("Created:", data);
-      setNewTask("");
-    })
-    .catch((err) => {
-      console.error("ERROR:", err);
-      alert("Failed to add task");
-    });
-};
+      .then((res) => {
+        console.log("Response:", res);
+        if (!res.ok) throw new Error("Failed request");
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Created:", data);
+        setNewTask("");
+      })
+      .catch((err) => {
+        console.error("ERROR:", err);
+        alert("Failed to add task");
+      });
+  };
 
   // 🔁 TOGGLE STATUS
   const toggleStatus = (task) => {
@@ -129,7 +133,7 @@ function App() {
     });
   };
 
-  // ⏰ SNOOZE
+  // ⏰ SNOOZE TASK
   const snoozeTask = (task) => {
     const future = new Date();
     future.setHours(future.getHours() + 2);
@@ -142,7 +146,7 @@ function App() {
       },
       body: JSON.stringify({
         ...task,
-        snoozedUntil: future,
+        snoozedUntil: future.toISOString(), // ✅ FIXED
       }),
     });
   };
@@ -157,6 +161,15 @@ function App() {
       t.title?.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => b.pinned - a.pinned);
+
+  // ⏳ LOADING UI
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xl">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -174,7 +187,8 @@ function App() {
           />
           <button
             onClick={addTask}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 rounded"
+            disabled={!token || loading}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 rounded disabled:opacity-50"
           >
             Add
           </button>
@@ -195,3 +209,4 @@ function App() {
 }
 
 export default App;
+
