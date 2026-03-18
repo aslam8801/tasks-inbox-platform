@@ -1,6 +1,7 @@
 package com.example.tasks.filter;
 
 import com.example.tasks.service.JwtService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -8,7 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 
 @Component
 public class JwtFilter implements Filter {
@@ -31,14 +32,14 @@ public class JwtFilter implements Filter {
             String token = authHeader.substring(7);
 
             if (jwtService.validateToken(token)) {
-
-                String username = jwtService.extractUsername(token);
+                Claims claims = jwtService.getClaims(token);
+                String username = claims.getSubject();
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 username,
                                 null,
-                                new ArrayList<>()
+                                Collections.emptyList()
                         );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);

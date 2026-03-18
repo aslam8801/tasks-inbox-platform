@@ -10,33 +10,35 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final Key SECRET = Keys.hmacShaKeyFor("mysecretkeymysecretkeymysecretkey".getBytes());
+    private final String SECRET = "mysecretkeymysecretkeymysecretkey"; // min 32 chars
+    private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
     public String generateToken(String username) {
+
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
-                .signWith(SECRET, SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 1 day
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    public String extractUsername(String token) {
-        return getClaims(token).getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
-            getClaims(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
+
             return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    private Claims getClaims(String token) {
+    public Claims getClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(SECRET)
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
