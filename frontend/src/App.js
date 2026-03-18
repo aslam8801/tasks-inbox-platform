@@ -3,6 +3,9 @@ import TaskList from "./components/TaskList";
 import Filters from "./components/Filters";
 import SearchBar from "./components/SearchBar";
 import SavedViews from "./components/SavedViews";
+import { connectWebSocket } from "./websocket";
+
+const BASE_URL = "https://tasks-inbox-platform.onrender.com";
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -10,41 +13,86 @@ function App() {
   const [search, setSearch] = useState("");
   const [savedViews, setSavedViews] = useState([]);
 
-  // 🔥 FETCH FROM BACKEND
+  const token = localStorage.getItem("token"); // JWT
+
+  // ✅ FETCH INITIAL DATA
   useEffect(() => {
-    fetch("https://tasks-inbox-platform.onrender.com/tasks")
+    fetch(`${BASE_URL}/tasks`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then(res => res.json())
       .then(data => setTasks(data))
-      .catch(err => console.error("Error fetching tasks:", err));
+      .catch(err => console.error(err));
+  }, []);
+
+  // ✅ WEBSOCKET
+  useEffect(() => {
+    connectWebSocket((updatedTask) => {
+      setTasks(prev => {
+        const exists = prev.find(t => t.id === updatedTask.id);
+
+        if (exists) {
+          return prev.map(t =>
+            t.id === updatedTask.id ? updatedTask : t
+          );
+        } else {
+          return [updatedTask, ...prev];
+        }
+      });
+    });
   }, []);
 
   const toggleStatus = (id) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id
-          ? { ...t, status: t.status === "pending" ? "completed" : "pending" }
-          : t
-      )
-    );
+    const task = tasks.find(t => t.id === id);
+
+    fetch(`${BASE_URL}/tasks/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...task,
+        status: task.status === "pending" ? "completed" : "pending",
+      }),
+    });
   };
 
   const togglePin = (id) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, pinned: !t.pinned } : t
-      )
-    );
+    const task = tasks.find(t => t.id === id);
+
+    fetch(`${BASE_URL}/tasks/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...task,
+        pinned: !task.pinned,
+      }),
+    });
   };
 
   const snoozeTask = (id) => {
+    const task = tasks.find(t => t.id === id);
+
     const future = new Date();
     future.setHours(future.getHours() + 2);
 
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, snoozedUntil: future } : t
-      )
-    );
+    fetch(`${BASE_URL}/tasks/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...task,
+        snoozedUntil: future,
+      }),
+    });
   };
 
   const saveView = () => {
@@ -74,14 +122,6 @@ function App() {
         >
           Save View
         </button>
-
-        <SavedViews
-          views={savedViews}
-          applyView={(v) => {
-            setFilter(v.filter);
-            setSearch(v.search);
-          }}
-        />
 
         <TaskList
           tasks={processedTasks}

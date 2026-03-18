@@ -2,7 +2,7 @@ import TaskItem from "./TaskItem";
 
 export default function TaskList({ tasks, toggleStatus, togglePin, snoozeTask }) {
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded">
       {tasks.map(task => (
         <TaskItem
           key={task.id}
